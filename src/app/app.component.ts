@@ -1,54 +1,94 @@
-import { Component } from '@angular/core';
-import { MsalService, MsalBroadcastService } from '@azure/msal-angular';
-import { EventMessage, EventType } from '@azure/msal-browser';
-
+import { MsalService } from '@azure/msal-angular';
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { PublicClientApplication, InteractionType } from '@azure/msal-browser';
+import { TokenCredentialAuthenticationProvider, TokenCredentialAuthenticationProviderOptions } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
+import { AuthenticationResult } from '@azure/msal-browser';
+import { Client,AuthProvider } from "@microsoft/microsoft-graph-client";
+import { ClientSecretCredential } from "@azure/identity";
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
+
+@Injectable()
 export class AppComponent {
-  private readonly _destroying$ = new Subject<void>();
+  title = 'my-app';
+  profile: any | null = null;
+  constructor(
+    private authService: MsalService,
+    private http: HttpClient,
+    
+    ) { 
+    this.authService.instance.handleRedirectPromise().then((result)=>{this.profile = result})
+      
+    }
+  ngOnInit() {
+      this.login();
+    }
 
-	constructor(private broadcastService: MsalBroadcastService) { }
-
-	ngOnInit() {
-		this.broadcastService.msalSubject$
-		.pipe(
-			filter((msg: EventMessage) => msg.eventType === EventType.ACQUIRE_TOKEN_SUCCESS),
-			takeUntil(this._destroying$)
-		)
-		.subscribe((result: EventMessage) => {
-			// Do something with event payload here
-		});
-	}
-
-	ngOnDestroy(): void {
-		this._destroying$.next(undefined);
-		this._destroying$.complete();
-	}
-  // title = 'my-app';
-  // user: any | null = null;
-  // constructor(private authService: MsalService) { }
-
-  // async login() {
-  //   // this.authService.loginRedirect()
-  //   const requestObj = {
-  //     clientId: '71502fba-06fa-4ccc-b3da-954f77768a08',
-  //     authority: 'https://login.microsoftonline.com/38ea53fb-9117-4764-adc6-31f828910b30',
-  //     redirectUri: 'https://localhost:8080/',
-  //     scopes: ["user.read"]
-  //   };
+  login() {
+    // this.authService.loginPopup()
+    //   .subscribe({
+    //     next: (result) => {
+    //       console.log(result);
+    //     },
+    //     error: (error) => console.log(error)
+    //   });
+    try{
+      this.authService.loginRedirect({
+        scopes: ['Group.ReadWrite.All', "openid", "profile"]
+      })
   
-  //   this.authService.acquireTokenSilent(requestObj).subscribe(function (tokenResponse) {
-  //     // Callback code here
-  //     console.log(tokenResponse.accessToken);
-  //     });
-    // .subscribe({
-      //   next: (result) => {
-      //     console.log(result);
-      //   },
-      //   error: (error) => console.log(error)
-      // });
+    }   
+    catch(err){
+      console.log('sef')
+    }  
+
+
+  };
+
+  async gettoken() {
+    // try
+    // {this.profile = await this.authService.instance.handleRedirectPromise();}
+    // catch (err)
+    // {
+    //   console.log('sfe')
+    // }
+    console.log(this.profile.accessToken)
+    const graphClient = Client.init({
+      authProvider: async (done) => {
+        // Get the token from the auth service
+        done(null,this.profile.accessToken);
+
+        
+      },
+    });    
+    const res = await graphClient.api("https://graph.microsoft.com/v1.0/me/transitiveMemberOf/microsoft.graph.group?$count=true").get();  
+    console.log(res)
+
+    // const graphMeEndpoint = "https://graph.microsoft.com/v1.0/me";
+    // await this.http.get(graphMeEndpoint).toPromise()
+    // .then(profile => {
+    //   this.profile = profile;
+    //   console.log(profile)
+    // });
+
+    // const requestObj = {
+    //   scopes: ['openid']
+    // };
+    // await this.authService.acquireTokenSilent(requestObj).toPromise().then(tokenResponse=>{console.log(tokenResponse.accessToken)}
+    //   // Callback code here
+      
+    // ).catch(function (error) {
+    //     console.log(error);
+    // });
+
+
+  }
+
+  
 }
 

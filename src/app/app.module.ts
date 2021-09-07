@@ -15,7 +15,6 @@ import { PlotComponent } from './plot/plot.component';
 import { PublicClientApplication, InteractionType } from '@azure/msal-browser';
 import { MsalInterceptor, MsalModule, MsalRedirectComponent } from '@azure/msal-angular';
 import { HTTP_INTERCEPTORS, HttpClientModule } from "@angular/common/http";
-
 PlotlyModule.plotlyjs = PlotlyJS;
 @NgModule({
   declarations: [
@@ -23,6 +22,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     PlotComponent
   ],
   imports: [
+    HttpClientModule,
     BrowserModule,
     AppRoutingModule,
     BrowserAnimationsModule,
@@ -43,12 +43,12 @@ PlotlyModule.plotlyjs = PlotlyJS;
     }),{
       interactionType: InteractionType.Redirect,
       authRequest: {
-        scopes: ['user.read']
+        scopes: ['openid', 'profile', 'Group.ReadWrite.All']
         }
     }, {
       interactionType: InteractionType.Redirect, // MSAL Interceptor Configuration
       protectedResourceMap: new Map([ 
-          ['https://graph.microsoft.com/v1.0/me', ['user.read']]
+          ['https://graph.microsoft.com/v1.0/me', ['openid', 'profile', 'Group.ReadWrite.All']]
       ])
     })
   ],
@@ -59,6 +59,6 @@ PlotlyModule.plotlyjs = PlotlyJS;
       multi: true
     }
   ],
-  bootstrap: [AppComponent, MsalRedirectComponent]
+  bootstrap: [AppComponent]
 })
 export class AppModule { }
